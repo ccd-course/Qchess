@@ -1,28 +1,14 @@
-from gym.spaces import Discrete
+from gym import spaces
 import numpy as np
 import functools
 from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector
 from pettingzoo.utils import wrappers
 
+from environment import qchess_utils
 
-ROCK = 0
-PAPER = 1
-SCISSORS = 2
-NONE = 3
-MOVES = ["ROCK", "PAPER", "SCISSORS", "None"]
-NUM_ITERS = 100
-REWARD_MAP = {
-    (ROCK, ROCK): (0, 0),
-    (ROCK, PAPER): (-1, 1),
-    (ROCK, SCISSORS): (1, -1),
-    (PAPER, ROCK): (1, -1),
-    (PAPER, PAPER): (0, 0),
-    (PAPER, SCISSORS): (-1, 1),
-    (SCISSORS, ROCK): (-1, 1),
-    (SCISSORS, PAPER): (1, -1),
-    (SCISSORS, SCISSORS): (0, 0),
-}
+PLAYERS = 3
+MAX_STEPS = 50
 
 
 def env():
@@ -50,7 +36,12 @@ class raw_env(AECEnv):
     The "name" metadata allows the environment to be pretty printed.
     """
 
-    metadata = {"render_modes": ["human"], "name": "qchess"}
+    metadata = {
+        "render_modes": ["human"],
+        "name": "qchess",
+        "is_parallelizable": False,
+        "render_fps": 2,
+    }
 
     def __init__(self):
         """
@@ -63,27 +54,81 @@ class raw_env(AECEnv):
         These attributes should not be changed after initialization.
         """
         super().__init__()
-        self.possible_agents = ["player_" + str(r) for r in range(2)]
-        self.agent_name_mapping = dict(
-            zip(self.possible_agents, list(range(len(self.possible_agents))))
-        )
+
+        # Create a list of initial agents
+        self.agents = [f"player_{i}" for i in range(PLAYERS)]
+
+        # Make a copy of the agent list as the agents are removed, when they are done.
+        self.possible_agents = self.agents[:]
+
+        # TODO: Set chessboard or game
+
+        # Create an agent selector, that loops through all agents
+        self._agent_selector = agent_selector(self.agents)
+        self.agent_selection = None
 
         # Gym spaces are defined and documented here: https://gym.openai.com/docs/#spaces
-        self._action_spaces = {agent: Discrete(3) for agent in self.possible_agents}
-        self._observation_spaces = {
-            agent: Discrete(4) for agent in self.possible_agents
+        # The board has 5 * 10 * n-Players squares.
+        # For 3 Players: 5 * 10 * 3 = 150
+        # A Queen can move (at maximum)
+        #   - 4 + 4 = 8 diagonal
+        #   - 29 + 4 = 33 straight
+        # A Knight can move (at maximum)
+        #   - 8 jumps
+        # Queen and Knight together cover all possible move destinations 8 + 33 + 8 = 49
+        # The general action space has a size of 150 * 49 = 7350
+        self.action_spaces = {name: spaces.Discrete(5 * 10 * PLAYERS * 49) for name in self.agents}
+
+        # The board has 5 x (10 * n-Players) squares. Each square has one integer representing the piece type and player
+        # Value -1: No piece
+        # Value 0: Cannon
+        # Value 1 - 8: Player 0
+        #   1: Pawn
+        #   2: Rook
+        #   3: Knight
+        #   4: Bishop
+        #   5: Ferz
+        #   6: Wazir
+        #   7: Queen
+        #   8: King
+        # Value 9 - 16: Player 1
+        # Value 17 - 24: Player 2
+        # ---
+        # observation: Board representation as above (5, 10 * player, 1) with additional history of the last 7 states
+        # action_mask: Binary mask on actions space to mark all possible actions (size equals action space)
+        self.observation_spaces = {
+            name: spaces.Dict(
+                {
+                    "observation": spaces.Box(
+                        low=0, high=1, shape=(5, 10 * PLAYERS, 1 + 7), dtype=int
+                    ),
+                    "action_mask": spaces.Box(
+                        low=0, high=1, shape=(5 * 10 * PLAYERS * 49,), dtype=np.int8
+                    ),
+                }
+            )
+            for name in self.agents
         }
+
+        self.rewards = None
+        self.dones = None
+        self.infos = {name: {} for name in self.agents}
+
+        self.step_count = 0
+        self.board_history = np.zeros((8, 8, 104), dtype=bool)
+        self._cumulative_rewards = {name: 0 for name in self.agents}
+
 
     # this cache ensures that same space object is returned for the same agent
     # allows action space seeding to work as expected
     @functools.lru_cache(maxsize=None)
     def observation_space(self, agent):
         # Gym spaces are defined and documented here: https://gym.openai.com/docs/#spaces
-        return Discrete(4)
+        return self.observation_spaces[agent]
 
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent):
-        return Discrete(3)
+        return self.action_spaces[agent]
 
     def render(self, mode="human"):
         """
@@ -91,9 +136,7 @@ class raw_env(AECEnv):
         up a graphical window, or open up some other display that a human can see and understand.
         """
         if len(self.agents) == 2:
-            string = "Current state: Agent1: {} , Agent2: {}".format(
-                MOVES[self.state[self.agents[0]]], MOVES[self.state[self.agents[1]]]
-            )
+            string = qchess_utils.get_str_observation()
         else:
             string = "Game over"
         print(string)
@@ -105,7 +148,21 @@ class raw_env(AECEnv):
         at any time after reset() is called.
         """
         # observation of one agent is the previous state of the other
-        return np.array(self.observations[agent])
+        observation = qchess_utils.get_observation(
+            self.board, self.possible_agents.index(agent)
+        )
+        observation = np.dstack((observation[:, :], self.board_history))
+        legal_moves = (
+            qchess_utils.legal_moves(self.board) if agent == self.agent_selection else []
+        )
+
+        # action_mask example:
+        # `action_mask[34] == 1` would mean, that a piece on a specific square is allowed to move in a specific way
+        action_mask = np.zeros(4672, "int8")
+        for i in legal_moves:
+            action_mask[i] = 1
+
+        return {"observation": observation, "action_mask": action_mask}
 
     def close(self):
         """
@@ -130,13 +187,16 @@ class raw_env(AECEnv):
         Here it sets up the state dictionary which is used by step() and the observations dictionary which is used by step() and observe()
         """
         self.agents = self.possible_agents[:]
-        self.rewards = {agent: 0 for agent in self.agents}
-        self._cumulative_rewards = {agent: 0 for agent in self.agents}
-        self.dones = {agent: False for agent in self.agents}
-        self.infos = {agent: {} for agent in self.agents}
-        self.state = {agent: NONE for agent in self.agents}
-        self.observations = {agent: NONE for agent in self.agents}
-        self.num_moves = 0
+
+        # TODO: Set chess game or board
+
+        self.rewards = {name: 0 for name in self.agents}
+        self.dones = {name: False for name in self.agents}
+        self.infos = {name: {} for name in self.agents}
+        self.board_history = np.zeros((8, 8, 104), dtype=bool)
+        self._cumulative_rewards = {name: 0 for name in self.agents}
+
+        self.step_count = 0
         """
         Our agent_selector utility allows easy cyclic stepping through the agents list.
         """
@@ -160,37 +220,30 @@ class raw_env(AECEnv):
             # the next done agent,  or if there are no more done agents, to the next live agent
             return self._was_done_step(action)
 
-        agent = self.agent_selection
+        current_agent = self.agent_selection
+        current_index = self.agents.index(current_agent)
 
-        # the agent which stepped last had its _cumulative_rewards accounted for
-        # (because it was returned by last()), so the _cumulative_rewards for this
-        # agent should start again at 0
-        self._cumulative_rewards[agent] = 0
+        next_board = qchess_utils.get_observation(self.board)
 
-        # stores action of current agent
-        self.state[self.agent_selection] = action
+        # Switch agent to be the next player
+        self.agent_selection = self._agent_selector.next()
 
-        # collect reward if it is the last agent to act
-        if self._agent_selector.is_last():
-            # rewards for all agents are placed in the .rewards dictionary
-            self.rewards[self.agents[0]], self.rewards[self.agents[1]] = REWARD_MAP[
-                (self.state[self.agents[0]], self.state[self.agents[1]])
-            ]
+        # TODO: Convert action value to move
+        # TODO: Assert, that move is legal
+        # TODO: Execute move to change game state
+        # TODO: Check, if a player is done and mark him has done
+        if self.step_count > MAX_STEPS:
+            pass
+        # TODO: Check if game has ended (checkmate or step-count limit exceeded)
+        game_over = False
 
-            self.num_moves += 1
-            # The dones dictionary must be updated for all players.
-            self.dones = {agent: self.num_moves >= NUM_ITERS for agent in self.agents}
+        if game_over:
+            pass
+            # TODO: Calculate reward for each agent
+            # TODO: Set self.rewards[agent]
 
-            # observe the current state
-            for i in self.agents:
-                self.observations[i] = self.state[
-                    self.agents[1 - self.agent_name_mapping[i]]
-                ]
-        else:
-            # necessary so that observe() returns a reasonable observation at all times.
-            self.state[self.agents[1 - self.agent_name_mapping[agent]]] = NONE
-            # no rewards are allocated until both players give an action
-            self._clear_rewards()
+        # Add rewards to cumulative rewards
+        self._accumulate_rewards()
 
         # selects the next agent.
         self.agent_selection = self._agent_selector.next()

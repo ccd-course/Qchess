@@ -1,6 +1,7 @@
 from gym import spaces
 import numpy as np
 import functools
+
 from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector
 from pettingzoo.utils import wrappers
@@ -71,13 +72,16 @@ class raw_env(AECEnv):
         # The board has 5 * 10 * n-Players squares.
         # For 3 Players: 5 * 10 * 3 = 150
         # A Queen can move (at maximum)
-        #   - 4 + 4 = 8 diagonal
-        #   - 29 + 4 = 33 straight
+        #   - 4 + 4 + 4 + 4 = 16 diagonal
+        #   - (10 * PLAYERS - 1) + 8 = (10 * PLAYERS + 7) straight
         # A Knight can move (at maximum)
         #   - 8 jumps
-        # Queen and Knight together cover all possible move destinations 8 + 33 + 8 = 49
-        # The general action space has a size of 150 * 49 = 7350
-        self.action_spaces = {name: spaces.Discrete(5 * 10 * PLAYERS * 49) for name in self.agents}
+        # Queen + Knight together cover all possible move destinations 16 + (10 * player + 7) + 8 = (10 * PLAYERS + 31)
+        # The general action space has a size of (5 * 10 * PLAYERS) * (10 * PLAYERS + 31)
+        #                                           = 500 * PLAYERS² + 1550 * PLAYERS
+        # For PLAYERS = 3 this would be an action space size of 9150
+        self.action_space_size = 500 * np.sqrt(PLAYERS) + 1550 * PLAYERS
+        self.action_spaces = {name: spaces.Discrete(self.action_space_size) for name in self.agents}
 
         # The board has 5 x (10 * n-Players) squares. Each square has one integer representing the piece type and player
         # Value -1: No piece
@@ -103,7 +107,7 @@ class raw_env(AECEnv):
                         low=0, high=1, shape=(5, 10 * PLAYERS, 1 + 7), dtype=int
                     ),
                     "action_mask": spaces.Box(
-                        low=0, high=1, shape=(5 * 10 * PLAYERS * 49,), dtype=np.int8
+                        low=0, high=1, shape=(self.action_space_size,), dtype=np.int8
                     ),
                 }
             )
@@ -115,9 +119,9 @@ class raw_env(AECEnv):
         self.infos = {name: {} for name in self.agents}
 
         self.step_count = 0
+        # TODO: Fix board_history init
         self.board_history = np.zeros((8, 8, 104), dtype=bool)
         self._cumulative_rewards = {name: 0 for name in self.agents}
-
 
     # this cache ensures that same space object is returned for the same agent
     # allows action space seeding to work as expected
@@ -158,7 +162,7 @@ class raw_env(AECEnv):
 
         # action_mask example:
         # `action_mask[34] == 1` would mean, that a piece on a specific square is allowed to move in a specific way
-        action_mask = np.zeros(4672, "int8")
+        action_mask = np.zeros(self.action_space_size, "int8")
         for i in legal_moves:
             action_mask[i] = 1
 
@@ -193,6 +197,7 @@ class raw_env(AECEnv):
         self.rewards = {name: 0 for name in self.agents}
         self.dones = {name: False for name in self.agents}
         self.infos = {name: {} for name in self.agents}
+        # TODO: Fix board_history reset
         self.board_history = np.zeros((8, 8, 104), dtype=bool)
         self._cumulative_rewards = {name: 0 for name in self.agents}
 

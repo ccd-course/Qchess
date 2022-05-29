@@ -30,11 +30,3 @@ class ADRQN(nn.Module):
 
         q_values = self.out_layer(lstm_out)
         return q_values, hidden_out
-
-    def act(self, observation, last_action, epsilon, hidden=None):
-        q_values, hidden_out = self.forward(observation, last_action, hidden)
-        if np.random.uniform() > epsilon:
-            action = torch.argmax(q_values).item()
-        else:
-            action = np.random.randint(self.n_actions)
-        return action, hidden_out

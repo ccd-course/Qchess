@@ -104,7 +104,7 @@ class raw_env(AECEnv):
             name: spaces.Dict(
                 {
                     "observation": spaces.Box(
-                        low=0, high=1, shape=(5, 10 * PLAYERS, 1 + 7), dtype=int
+                        low=0, high=1, shape=(5, 10 * PLAYERS, PLAYERS * 8,), dtype=int
                     ),
                     "action_mask": spaces.Box(
                         low=0, high=1, shape=(self.action_space_size,), dtype=np.int8

@@ -5,6 +5,11 @@ def get_observation():
 
     :return:
     """
+
+    # board = game.getChessboard()
+    # b_sq = board.getSquares()
+    # sq2 = [list(square) for square in b_sq]
+
     pass
 
 

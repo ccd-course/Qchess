@@ -1,16 +1,46 @@
-def get_observation():
+from ast import Return
+from distutils.log import error
+from logging import exception
+from msilib.schema import Error
+import numpy as np
+
+def symbol_layer_mapper(piece_symbol: str, player_id: int) -> int:
+    layer_base_position = 0
+    if (piece_symbol == "R"): layer_base_position = 1
+    elif(piece_symbol == "N"): layer_base_position = 2
+    elif(piece_symbol == "B"): layer_base_position = 3
+    elif(piece_symbol == "Q"): layer_base_position = 4
+    elif(piece_symbol == "K"): layer_base_position = 5
+    elif(piece_symbol == "C"): layer_base_position = 6
+    elif(piece_symbol == "F"): layer_base_position = 7
+    elif(piece_symbol == "W"): layer_base_position = 8
+    else: raise ValueError(f"Piece symbol is not defined {piece_symbol}")
+    return layer_base_position * player_id
+
+def get_observation(java_chessboard) -> np.NDArray:
     """Generate observation from chessboard or game.
     This would be an 2-dimensional array with int values representing the piece standing on the square.
     An empty square is represented as -1.
 
     :return:
     """
+    board = java_chessboard.getChessboard()
+    b_sq = list(board.getSquares())
+    length_line =  len(list(b_sq[0]))
+    players_number = 3
+    observation = [ [ [0] * 8 * players_number  ] * len(b_sq) ] * length_line
 
-    # board = game.getChessboard()
-    # b_sq = board.getSquares()
-    # sq2 = [list(square) for square in b_sq]
+    for line in b_sq:
 
-    pass
+        for square in line:
+
+            if(square.getPiece()):
+                line = square.getPosition().getX()
+                line_square_number = square.getPosition().getY()
+                piece_layer_number = square.getPiece().getType().geySymbol()
+                observation[line][line_square_number][piece_layer_number] = 1
+                
+    return np.asarray(observation)
 
 
 def get_str_observation():

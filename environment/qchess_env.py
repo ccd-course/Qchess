@@ -6,7 +6,7 @@ from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector
 from pettingzoo.utils import wrappers
 
-from environment import qchess_utils
+from game.game import Game
 
 PLAYERS = 3
 MAX_STEPS = 50
@@ -62,7 +62,7 @@ class raw_env(AECEnv):
         # Make a copy of the agent list as the agents are removed, when they are done.
         self.possible_agents = self.agents[:]
 
-        # TODO: Set chessboard or game
+        self.game = Game()
 
         # Create an agent selector, that loops through all agents
         self._agent_selector = agent_selector(self.agents)
@@ -140,7 +140,7 @@ class raw_env(AECEnv):
         up a graphical window, or open up some other display that a human can see and understand.
         """
         if len(self.agents) == 2:
-            string = qchess_utils.get_str_observation()
+            string = self.game.get_str_observation()
         else:
             string = "Game over"
         print(string)
@@ -152,12 +152,12 @@ class raw_env(AECEnv):
         at any time after reset() is called.
         """
         # observation of one agent is the previous state of the other
-        observation = qchess_utils.get_observation(
-            self.board, self.possible_agents.index(agent)
+        observation = self.game.get_observation(
+            self.possible_agents.index(agent)
         )
         observation = np.dstack((observation[:, :], self.board_history))
         legal_moves = (
-            qchess_utils.legal_moves(self.board) if agent == self.agent_selection else []
+            self.game.get_legal_moves() if agent == self.agent_selection else []
         )
 
         # action_mask example:
@@ -228,7 +228,7 @@ class raw_env(AECEnv):
         current_agent = self.agent_selection
         current_index = self.agents.index(current_agent)
 
-        next_board = qchess_utils.get_observation(self.board)
+        next_board = self.game.get_observation()
 
         # Switch agent to be the next player
         self.agent_selection = self._agent_selector.next()

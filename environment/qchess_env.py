@@ -133,6 +133,14 @@ class raw_env(AECEnv):
     @functools.lru_cache(maxsize=None)
     def action_space(self, agent):
         return self.action_spaces[agent]
+    
+    def _accumulate_rewards(self) -> None:
+        """
+        Adds .rewards dictionary to ._cumulative_rewards dictionary. Typically
+        called near the end of a step() method
+        """
+        for agent, reward in self.rewards.items():
+            self._cumulative_rewards[agent] += reward
 
     def render(self, mode="human"):
         """

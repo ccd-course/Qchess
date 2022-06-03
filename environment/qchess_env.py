@@ -251,6 +251,8 @@ class raw_env(AECEnv):
         game_over = False
 
         if game_over:
+            # big reward for winning the game
+            self.rewards[self.agent_selection] += 1000
             pass
             # TODO: Calculate reward for each agent
             # TODO: Set self.rewards[agent]

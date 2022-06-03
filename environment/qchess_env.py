@@ -114,7 +114,7 @@ class raw_env(AECEnv):
             for name in self.agents
         }
 
-        self.rewards = None
+        self.rewards = {name: 0 for name in self.agents}
         self.dones = None
         self.infos = {name: {} for name in self.agents}
 

@@ -18,8 +18,8 @@ def symbol_layer_mapper(piece_symbol: str, player_id: int) -> int:
     elif(piece_symbol == "C"): layer_base_position = 6
     elif(piece_symbol == "F"): layer_base_position = 7
     elif(piece_symbol == "W"): layer_base_position = 8
-    else: raise ValueError(f"Piece symbol is not defined {piece_symbol}")
-    return layer_base_position * player_id
+    # else: raise ValueError(f"Piece symbol is not defined {piece_symbol}")
+    return layer_base_position + player_id * 8
 
 
 def get_str_observation(observation):
@@ -58,7 +58,7 @@ class Game:
       self.chess_game = self.chess_game_service.getGame(self.game_id)
       print(f"Players: {self.chess_game.getPlayers().toString()}")
 
-    def get_observation(self) -> np.NDArray:
+    def get_observation(self) -> np.ndarray:
         """Generate observation from chessboard or game.
         This would be an 3-dimensional array with one-hot-encoded values representing the piece standing on the square.
         An empty square is represented as vector containing all zeros.
@@ -68,22 +68,21 @@ class Game:
         board = self.chess_game.getChessboard()
         b_sq = list(board.getSquares())
         length_line = len(list(b_sq[0]))
-        players_number = 3
-        observation = [[[0] * 8 * players_number] * len(b_sq)] * length_line
+        players_number = len(self.chess_game.getPlayers()) + 1
+        z_size = 8 * players_number
+        observation = np.zeros((len(b_sq), length_line, z_size))
 
-        for line in b_sq:
+        for x_pos in range(len(b_sq)):
 
-            for square in line:
-
+            for y_pos in range(len(b_sq[x_pos])):
+                square = b_sq[x_pos][y_pos]
                 if square.getPiece():
-                    line = square.getPosition().getX()
-                    line_square_number = square.getPosition().getY()
                     piece = square.getPiece()
-                    piece_symbol = piece.getType().getSymbol()
+                    piece_symbol = str(piece.getType().getSymbol())
                     piece_layer = symbol_layer_mapper(piece_symbol, piece.getPlayer().getId())
-                    observation[line][line_square_number][piece_layer] = 1
+                    observation[x_pos][y_pos][piece_layer] = 1
 
-        return np.asarray(observation)
+        return observation
 
     def get_legal_moves(self, player):
         """Aggregates all legal action-codes in one long integer list.

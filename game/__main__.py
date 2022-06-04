@@ -3,7 +3,6 @@ init_jvm()
 from com.chess.backend.services import ChessboardService, ChessGameService, PlayerService
 from com.chess.backend.restController.service import NewChessGameService
 from com.chess.backend.repository import GameRepositoryMock
-from ..environment.qchess_utils import get_observation 
 
 if __name__ == "__main__": 
     # game_repository = GameRepositoryMock()

@@ -6,7 +6,7 @@ from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector
 from pettingzoo.utils import wrappers
 
-from game.game import Game
+from game.game import Game, get_str_observation
 
 PLAYERS = 3
 MAX_STEPS = 50
@@ -98,7 +98,7 @@ class raw_env(AECEnv):
         # Value 9 - 16: Player 1
         # Value 17 - 24: Player 2
         # ---
-        # observation: Board representation as above (5, 10 * player, 1) with additional history of the last 7 states
+        # observation: Board representation as above (5, 10 * player, 1)
         # action_mask: Binary mask on actions space to mark all possible actions (size equals action space)
         self.observation_spaces = {
             name: spaces.Dict(
@@ -119,8 +119,6 @@ class raw_env(AECEnv):
         self.infos = {name: {} for name in self.agents}
 
         self.step_count = 0
-        # TODO: Fix board_history init
-        self.board_history = np.zeros((8, 8, 104), dtype=bool)
         self._cumulative_rewards = {name: 0 for name in self.agents}
 
     # this cache ensures that same space object is returned for the same agent
@@ -148,7 +146,7 @@ class raw_env(AECEnv):
         up a graphical window, or open up some other display that a human can see and understand.
         """
         if len(self.agents) == 2:
-            string = self.game.get_str_observation()
+            string = get_str_observation(self.game.get_observation())
         else:
             string = "Game over"
         print(string)
@@ -160,12 +158,11 @@ class raw_env(AECEnv):
         at any time after reset() is called.
         """
         # observation of one agent is the previous state of the other
-        observation = self.game.get_observation(
-            self.possible_agents.index(agent)
-        )
-        observation = np.dstack((observation[:, :], self.board_history))
+        observation = self.game.get_observation()
+        player = list(filter(lambda player: player.getId() == agent, self.game.chess_game.getPlayers()))[0]
+        # observation = np.dstack((observation[:, :], self.board_history))
         legal_moves = (
-            self.game.get_legal_moves() if agent == self.agent_selection else []
+            self.game.get_legal_moves(agent) if agent == self.agent_selection else []
         )
 
         # action_mask example:
@@ -200,13 +197,11 @@ class raw_env(AECEnv):
         """
         self.agents = self.possible_agents[:]
 
-        # TODO: Set chess game or board
+        self.game = Game()
 
         self.rewards = {name: 0 for name in self.agents}
         self.dones = {name: False for name in self.agents}
         self.infos = {name: {} for name in self.agents}
-        # TODO: Fix board_history reset
-        self.board_history = np.zeros((8, 8, 104), dtype=bool)
         self._cumulative_rewards = {name: 0 for name in self.agents}
 
         self.step_count = 0
@@ -241,10 +236,9 @@ class raw_env(AECEnv):
         # Switch agent to be the next player
         self.agent_selection = self._agent_selector.next()
 
-        # TODO: Convert action value to move
-        # TODO: Assert, that move is legal
-        # TODO: Execute move to change game state
-        # TODO: reward player for its move
+        executed_move_obj = self.game.action_to_move(action)
+        self.game.execute_move(executed_move_obj)
+
         # reduce rewards for each game step to encourage shorter games
         self.rewards[self.agent_selection] -= 1
         
@@ -257,9 +251,6 @@ class raw_env(AECEnv):
         if game_over:
             # big reward for winning the game
             self.rewards[self.agent_selection] += 1000
-            pass
-            # TODO: Calculate reward for each agent
-            # TODO: Set self.rewards[agent]
 
         # Add rewards to cumulative rewards
         self._accumulate_rewards()

@@ -1,6 +1,6 @@
 import numpy as np
 
-from game.jvm import init_jvm
+from .jvm import init_jvm
 init_jvm()
 from com.chess.backend.services import ChessboardService, ChessGameService, PlayerService
 from com.chess.backend.restController.service import NewChessGameService
@@ -105,4 +105,6 @@ class Game:
         :param executed_move_obj:
         :return:
         """
-        return ExecutedMoveController.executedMove(executed_move_obj)
+        return self.chess_game_service.executedMove(executed_move_obj.getGameID(),
+                                             executed_move_obj.getPreviousPiecePosition(),
+                                             executed_move_obj.getNewPiecePosition())

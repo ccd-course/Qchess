@@ -1,3 +1,5 @@
+from typing import Dict
+
 from gym import spaces
 import numpy as np
 import functools
@@ -6,7 +8,7 @@ from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector
 from pettingzoo.utils import wrappers
 
-from game.game import Game, get_str_observation
+from game.game import get_str_observation, Game
 
 PLAYERS = 3
 MAX_STEPS = 50
@@ -80,7 +82,7 @@ class raw_env(AECEnv):
         # The general action space has a size of (5 * 10 * PLAYERS) * (10 * PLAYERS + 31)
         #                                           = 500 * PLAYERS² + 1550 * PLAYERS
         # For PLAYERS = 3 this would be an action space size of 9150
-        self.action_space_size = 500 * np.sqrt(PLAYERS) + 1550 * PLAYERS
+        self.action_space_size = 500 * (PLAYERS**2) + 1550 * PLAYERS
         self.action_spaces = {name: spaces.Discrete(self.action_space_size) for name in self.agents}
 
         # The board has 5 x (10 * n-Players) squares. Each square has one integer representing the piece type and player
@@ -151,7 +153,7 @@ class raw_env(AECEnv):
             string = "Game over"
         print(string)
 
-    def observe(self, agent):
+    def observe(self, agent) -> Dict[str, any]:
         """
         Observe should return the observation of the specified agent. This function
         should return a sane observation (though not necessarily the most up to date possible)
@@ -159,10 +161,11 @@ class raw_env(AECEnv):
         """
         # observation of one agent is the previous state of the other
         observation = self.game.get_observation()
-        player = list(filter(lambda player: player.getId() == agent, self.game.chess_game.getPlayers()))[0]
+        agent_id: int = int(agent.split("_")[1])
+        player = list(filter(lambda player: agent_id == player.getId(), self.game.chess_game.getPlayers()))[0]
         # observation = np.dstack((observation[:, :], self.board_history))
         legal_moves = (
-            self.game.get_legal_moves(agent) if agent == self.agent_selection else []
+            self.game.get_legal_moves(player) if player == self.agent_selection else []
         )
 
         # action_mask example:
@@ -228,21 +231,12 @@ class raw_env(AECEnv):
             # the next done agent,  or if there are no more done agents, to the next live agent
             return self._was_done_step(action)
 
-        current_agent = self.agent_selection
-        current_index = self.agents.index(current_agent)
-
-        next_board = self.game.get_observation()
-
-        # Switch agent to be the next player
-        self.agent_selection = self._agent_selector.next()
-
         executed_move_obj = self.game.action_to_move(action)
         self.game.execute_move(executed_move_obj)
 
         # reduce rewards for each game step to encourage shorter games
         self.rewards[self.agent_selection] -= 1
         
-        # TODO: Check, if a player is done and mark him has done
         if self.step_count > MAX_STEPS:
             pass
         # TODO: Check if game has ended (checkmate or step-count limit exceeded)

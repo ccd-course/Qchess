@@ -244,6 +244,10 @@ class raw_env(AECEnv):
         # TODO: Convert action value to move
         # TODO: Assert, that move is legal
         # TODO: Execute move to change game state
+        # TODO: reward player for its move
+        # reduce rewards for each game step to encourage shorter games
+        self.rewards[self.agent_selection] -= 1
+        
         # TODO: Check, if a player is done and mark him has done
         if self.step_count > MAX_STEPS:
             pass

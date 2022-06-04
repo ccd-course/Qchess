@@ -19,8 +19,8 @@ def symbol_layer_mapper(piece_symbol: str, player_id: int) -> int:
 
 def get_observation(java_chessboard) -> np.NDArray:
     """Generate observation from chessboard or game.
-    This would be an 2-dimensional array with int values representing the piece standing on the square.
-    An empty square is represented as -1.
+    This would be an 3-dimensional array with one-hot-encoded values representing the piece standing on the square.
+    An empty square is represented as vector containing all zeros.
 
     :return:
     """

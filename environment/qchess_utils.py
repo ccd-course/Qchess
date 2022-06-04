@@ -57,3 +57,18 @@ def get_legal_moves():
     :return:
     """
     pass
+
+def count_pieces(observation):
+    """Count each player's pieces remaining in a given observation.
+    
+    :return: dictionary containing player numbers as keys and number of that player's remaining pieces as corresponding value.
+    """
+    # get number of players by dividing last dimension's length by 8 (number of pieces)
+    players_number = observation.shape[-1] / 8
+    
+    # initialize dictionary with value 0 for each player
+    piece_count = {player:0 for player in range(players_number)}
+    
+    # TODO: iterate over observation, check last dimension's 1 index, get player corresponing to index, increase piece_count
+    
+    return piece_count

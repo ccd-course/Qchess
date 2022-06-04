@@ -43,12 +43,12 @@ def get_observation(java_chessboard) -> np.NDArray:
     return np.asarray(observation)
 
 
-def get_str_observation():
+def get_str_observation(observation):
     """Converts a board observation to a string that can be interpreted by a human.
 
     :return:
     """
-    pass
+    return str(np.argmax(observation, axis=-1))
 
 
 def get_legal_moves():

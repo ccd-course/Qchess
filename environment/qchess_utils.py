@@ -37,7 +37,7 @@ def get_observation(java_chessboard) -> np.NDArray:
             if(square.getPiece()):
                 line = square.getPosition().getX()
                 line_square_number = square.getPosition().getY()
-                piece_layer_number = square.getPiece().getType().geySymbol()
+                piece_layer_number = square.getPiece().getType().getSymbol()
                 observation[line][line_square_number][piece_layer_number] = 1
                 
     return np.asarray(observation)

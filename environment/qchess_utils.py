@@ -58,7 +58,7 @@ def get_legal_moves():
     """
     pass
 
-def count_pieces(observation):
+def count_remaining_pieces(observation):
     """Count each player's pieces remaining in a given observation.
     
     :return: dictionary containing player numbers as keys and number of that player's remaining pieces as corresponding value.

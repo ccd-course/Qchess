@@ -91,3 +91,10 @@ fabric.properties
 !.idea/runConfigurations
 
 # End of https://www.toptal.com/developers/gitignore/api/pycharm+all
+
+# python virtual environment
+venv
+
+# python cache files
+pz-algorithms/Double-DQN/__pycache__
+pz-algorithms/DRQN/__pycache__

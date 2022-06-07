@@ -4,8 +4,8 @@ import matplotlib
 
 
 is_ipython = 'inline' in matplotlib.get_backend()
-if is_ipython:
-    from IPython import display
+#if is_ipython:
+ #   from IPython import display
 
 
 def plot(values, moving_avg_period):
@@ -20,8 +20,8 @@ def plot(values, moving_avg_period):
     plt.plot(moving_avg)
     plt.pause(0.01)
 
-    if is_ipython:
-        display.clear_output(wait=True)
+    #if is_ipython:
+     #   display.clear_output(wait=True)
 
 
 def get_moving_average(period, values):

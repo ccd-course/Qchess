@@ -243,7 +243,7 @@ class raw_env(AECEnv):
         # add reward for each own piece still alive
         piece_counter = count_remaining_pieces(self.game.get_observation())
         #self.rewards[self.agent_selection] += piece_counter[str(self.agent_selection)]
-        # * Valentin said that agent_selection probably is a name like "agent_0" or "agent 1". The following line should work for that and even if it's just "0" or "1" as it will take the last char of the string
+        # * Valentin said that agent_selection probably is a name like "agent_0" or "agent_1". The following line should work for that and even if it's just "0" or "1" as it will take the last char of the string
         self.rewards[self.agent_selection] += piece_counter[self.agent_selection[-1]]
         
         if self.step_count > MAX_STEPS:

@@ -102,6 +102,8 @@ class raw_env(AECEnv):
         # ---
         # observation: Board representation as above (5, 10 * player, 8 * player)
         # action_mask: Binary mask on actions space to mark all possible actions (size equals action space)
+        # observation space size
+        self.state_space_size = 5 * 10 * PLAYERS * 8 * PLAYERS
         self.observation_spaces = {
             name: spaces.Dict(
                 {

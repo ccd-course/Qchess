@@ -82,7 +82,7 @@ class raw_env(AECEnv):
         # The general action space has a size of (5 * 10 * PLAYERS) * (10 * PLAYERS + 31)
         #                                           = 500 * PLAYERS² + 1550 * PLAYERS
         # For PLAYERS = 3 this would be an action space size of 9150
-        self.action_space_size = 500 * (PLAYERS**2) + 1550 * PLAYERS
+        self.action_space_size = 500 * PLAYERS * PLAYERS + 1550 * PLAYERS
         self.action_spaces = {name: spaces.Discrete(self.action_space_size) for name in self.agents}
 
         # The board has 5 x (10 * n-Players) squares. Each square has one integer representing the piece type and player
@@ -102,8 +102,9 @@ class raw_env(AECEnv):
         # ---
         # observation: Board representation as above (5, 10 * player, 8 * player)
         # action_mask: Binary mask on actions space to mark all possible actions (size equals action space)
-        # observation space size
-        self.state_space_size = 5 * 10 * PLAYERS * 8 * PLAYERS
+        # observation space size = 5 * 10 * PLAYERS * 8 * PLAYERS
+        # ! written as less multiplication operations (5*10*8=400)
+        self.state_space_size = 400 * PLAYERS * PLAYERS
         self.observation_spaces = {
             name: spaces.Dict(
                 {

@@ -1,13 +1,15 @@
 import numpy as np
-import gym
+import pettingzoo
 import random
 import time
-from IPython.display import clear_output
+from environment import qchess_env
 
-env = gym.make("FrozenLake-v0")
+# TODO: enable multi agent training
 
-action_space_size = env.action_space.n
-state_space_size = env.observation_space.n
+env = qchess_env.env()
+
+action_space_size = env.action_space_size
+state_space_size = env.state_space_size
 
 q_table = np.zeros((state_space_size, action_space_size))
 
@@ -35,8 +37,11 @@ for episode in range(num_episodes):
         if exploration_rate_threshold > exploration_rate:
             action = np.argmax(q_table[state, :])
         else:
-            action = env.action_space.sample()
+            #action = env.action_space.sample()
+            # TODO: test
+            action = env.observation_spaces["player_0"]["action_mask"].sample()
         # Take new action
+        # TODO: make sure step function returns required values in given order
         new_state, reward, done, info = env.step(action)
         # Update Q-table
         # Update Q-table for Q(s,a)

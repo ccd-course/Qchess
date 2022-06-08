@@ -43,14 +43,11 @@ for episode in range(num_episodes):
         if exploration_rate_threshold > exploration_rate:
             action = np.argmax(q_table[state, :])
         else:
-            #action = env.action_space.sample()
-            # TODO: test
             try:
                 action = np.random.choice(np.argwhere(env.observe(env.agent_selection)["action_mask"] == 1).reshape(-1))
             except:
                 raise Exception("Can not perform any action.")
         # Take new action
-        # TODO: make sure step function returns required values in given order
         env.step(action)
         new_state, reward, done, info = env.last()
         # Update Q-table

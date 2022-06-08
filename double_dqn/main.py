@@ -1,8 +1,10 @@
+import math
+
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
 from itertools import count
-from . import qchess_env
+import qchess_env
 from epsilon_greedy_strategy import EpsilonGreedyStrategy
 from agent import Agent
 from experience_replay import ReplayMemory, Experience, extract_tensors
@@ -25,13 +27,18 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 env = qchess_env.env()
 strategy = EpsilonGreedyStrategy(eps_start, eps_end, eps_decay)
-agent = Agent(strategy, env.action_space_size, device)
+
+# ! math.prod needs python >= 3.8
+state_size = math.prod(env.observation_spaces["player_0"].spaces["observation"].shape)
+n_actions = env.action_spaces["player_0"].n
+
+agent = Agent(strategy, n_actions, device)
 memory = ReplayMemory(memory_size)
 
-policy_net = Network(env.state_space_size,
-                     env.action_space_size).to(device)
-target_net = Network(env.state_space_size,
-                     env.action_space_size).to(device)
+policy_net = Network(state_size,
+                     n_actions).to(device)
+target_net = Network(state_size,
+                     n_actions).to(device)
 target_net.load_state_dict(policy_net.state_dict())
 target_net.eval()
 optimizer = optim.Adam(params=policy_net.parameters(), lr=lr)
@@ -41,7 +48,7 @@ episode_durations = []
 
 for episode in range(num_episodes):
     env.reset()
-    state = env.observe()
+    state = env.observe(env.agent_selection)
     for timestep in count():
         action = agent.select_action(state, policy_net)
         # TODO: change to receive returns of step (not just reward)

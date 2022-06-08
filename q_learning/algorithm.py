@@ -45,7 +45,7 @@ for episode in range(num_episodes):
         else:
             try:
                 action = np.random.choice(np.argwhere(env.observe(env.agent_selection)["action_mask"] == 1).reshape(-1))
-            except:
+            except Exception:
                 raise Exception("Can not perform any action.")
         # Take new action
         env.step(action)
@@ -53,7 +53,7 @@ for episode in range(num_episodes):
         # Update Q-table
         # Update Q-table for Q(s,a)
         q_table[state, action] = q_table[state, action] * (1 - learning_rate) + learning_rate * (
-            reward + discount_rate * np.max(q_table[new_state, :]))
+                reward + discount_rate * np.max(q_table[new_state["observation"], :]))
         # Set new state
         state = new_state
         # Add new reward
@@ -62,16 +62,16 @@ for episode in range(num_episodes):
             break
     # Exploration rate decay
     exploration_rate = min_exploration_rate + \
-        (max_exploration_rate - min_exploration_rate) * \
-        np.exp(-exploration_decay_rate*episode)
+                       (max_exploration_rate - min_exploration_rate) * \
+                       np.exp(-exploration_decay_rate * episode)
     # Add current episode reward to total rewards list
     rewards_all_episodes.append(rewards_current_episode)
 
 rewards_per_thousand_episodes = np.split(
-    np.array(rewards_all_episodes), num_episodes/1000)
+    np.array(rewards_all_episodes), num_episodes / 1000)
 count = 1000
 
 print("********Average reward per thousand episodes********\n")
 for r in rewards_per_thousand_episodes:
-    print(count, ": ", str(sum(r/1000)))
+    print(count, ": ", str(sum(r / 1000)))
     count += 1000

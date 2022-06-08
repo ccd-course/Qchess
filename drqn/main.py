@@ -1,22 +1,24 @@
 import numpy as np
-import gym
+import qchess_env
 import torch
 import torch.nn.functional as F
-import time
 from itertools import count
 import math
 from network import ADRQN
 from experience_replay import ExpBuffer
-from env import EnvManager
+#from env import EnvManager
 from agent import Agent
 from epsilon_greedy_strategy import EpsilonGreedyStrategy
 from plot import plot, get_moving_average
 
-device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-env = EnvManager(device, 'CartPole-v1')
+# TODO: enable multi agent training
 
-state_size = env.num_state_features()
-n_actions = env.num_actions_available()
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+#env = EnvManager(device, 'CartPole-v1')
+env = qchess_env.env()
+
+state_size = env.state_space_size
+n_actions = env.action_space_size
 
 embedding_size = 8
 M_episodes = 2500
@@ -35,7 +37,7 @@ EXPLORE = 300
 target_update = 5  # Interval for updating the target net
 
 strategy = EpsilonGreedyStrategy(eps_start, eps_end, eps_decay)
-agent = Agent(strategy, env.num_actions_available(), device)
+agent = Agent(strategy, n_actions, device)
 adrqn = ADRQN(n_actions, state_size, embedding_size).cuda()
 adrqn_target = ADRQN(n_actions, state_size, embedding_size).cuda()
 adrqn_target.load_state_dict(adrqn.state_dict())
@@ -50,12 +52,13 @@ for episode in range(M_episodes):
     last_action = 0
     current_return = 0
     env.reset()
-    last_observation = env.get_state()
+    last_observation = env.observe()
     for timestep in count():
         action, hidden = agent.act(torch.tensor(last_observation).float().view(1, 1, -1).cuda(), F.one_hot(
             torch.tensor(last_action), n_actions).view(1, 1, -1).float().cuda(), eps, adrqn, hidden=hidden)
 
-        observation, reward, done, info = env.take_action(action)
+        # TODO: make sure step function returns required values in given order
+        observation, reward, done, info = env.step(action)
         if np.random.rand() < blind_prob:
             # Induce partial observability
             observation = np.zeros_like(observation)

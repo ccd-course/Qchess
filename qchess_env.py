@@ -8,7 +8,7 @@ from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector
 from pettingzoo.utils import wrappers
 
-from game.game import count_remaining_pieces, get_str_observation, Game
+from game import count_remaining_pieces, get_str_observation, Game
 
 PLAYERS = 3
 MAX_STEPS = 50

@@ -1,8 +1,10 @@
 import numpy as np
-import gym
+from . import qchess_env
+
+# TODO: enable multi agent training
 
 # Building the environment
-env = gym.make('FrozenLake-v0')
+env = qchess_env.env()
 
 # Defining the different parameters
 epsilon = 0.9
@@ -12,7 +14,7 @@ alpha = 0.85
 gamma = 0.95
 
 # Initializing the Q-matrix
-Q = np.zeros((env.observation_space.n, env.action_space.n))
+Q = np.zeros((env.state_space_size, env.action_space_size))
 
 # Function to choose the next action
 
@@ -20,7 +22,8 @@ Q = np.zeros((env.observation_space.n, env.action_space.n))
 def choose_action(state):
     action = 0
     if np.random.uniform(0, 1) < epsilon:
-        action = env.action_space.sample()
+        # TODO: test
+        action = env.observation_spaces["player_0"]["action_mask"].sample()
     else:
         action = np.argmax(Q[state, :])
     return action
@@ -36,7 +39,7 @@ def update(state, state2, reward, action, action2):
 
 # Initializing the reward
 reward = 0
-# Starting the SARSA learning
+# Starting the sarsa learning
 for episode in range(total_episodes):
     t = 0
     state1 = env.reset()
@@ -45,6 +48,7 @@ for episode in range(total_episodes):
         # Visualizing the training
         env.render()
         # Getting the next state
+        # TODO: make sure step function returns required values in given order
         state2, reward, done, info = env.step(action1)
         # Choosing the next action
         action2 = choose_action(state2)

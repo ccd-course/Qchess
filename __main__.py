@@ -1,7 +1,7 @@
 import numpy as np
 
-from environment import qchess_env
-from typing import List, TypedDict
+import qchess_env
+from typing import TypedDict
 
 ObservationDict = TypedDict('ObservationDict', {
     'observation': np.ndarray,

@@ -1,11 +1,10 @@
 import numpy as np
 
-from .jvm import init_jvm
+from jvm import init_jvm
 init_jvm()
-from com.chess.backend.services import ChessboardService, ChessGameService, PlayerService
+from com.chess.backend.services import ChessboardService, ChessGameService
 from com.chess.backend.restController.service import NewChessGameService
 from com.chess.backend.repository import GameRepositoryMock
-from com.chess.backend.restController.controller import ExecutedMoveController
 
 
 def symbol_layer_mapper(piece_symbol: str, player_id: int) -> int:

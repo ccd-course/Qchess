@@ -96,5 +96,5 @@ fabric.properties
 venv
 
 # python cache files
-pz-algorithms/Double-DQN/__pycache__
-pz-algorithms/DRQN/__pycache__
+double_dqn/__pycache__
+drqn/__pycache__

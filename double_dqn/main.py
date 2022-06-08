@@ -1,15 +1,14 @@
-import math
-
+import numpy as np
 import torch
 import torch.optim as optim
 import torch.nn.functional as F
 from itertools import count
-import qchess_env
 from epsilon_greedy_strategy import EpsilonGreedyStrategy
 from agent import Agent
 from experience_replay import ReplayMemory, Experience, extract_tensors
 from network import Network, QValues
 from plot import plot, get_moving_average
+from env import EnvManager
 
 
 # Hyperparameters
@@ -25,12 +24,12 @@ num_episodes = 1000  # Num of episode
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-env = qchess_env.env()
+em = EnvManager(device)
 strategy = EpsilonGreedyStrategy(eps_start, eps_end, eps_decay)
 
 # ! math.prod needs python >= 3.8
-state_size = math.prod(env.observation_spaces["player_0"].spaces["observation"].shape)
-n_actions = env.action_spaces["player_0"].n
+state_size = em.num_state_features()
+n_actions = em.num_actions_available()
 
 agent = Agent(strategy, n_actions, device)
 memory = ReplayMemory(memory_size)
@@ -47,20 +46,27 @@ optimizer = optim.Adam(params=policy_net.parameters(), lr=lr)
 episode_durations = []
 
 for episode in range(num_episodes):
-    env.reset()
-    state = env.observe(env.agent_selection)
+    em.reset()
+    state = em.get_state()
+    mask = em.get_mask()
+
     for timestep in count():
-        action = agent.select_action(state, policy_net)
+        try:
+            action = agent.select_action(state, policy_net, mask)
+        except Exception:
+            print(np.argwhere(mask == 1))
+
         # TODO: change to receive returns of step (not just reward)
-        reward = env.step(action)
-        next_state = env.observe()
+        reward = em.take_action(action)
+        next_state = em.get_state()
+        mask = em.get_mask()
         memory.push(Experience(state, action, next_state, reward))
         state = next_state
         if memory.can_provide_sample(batch_size):
             experiences = memory.sample(batch_size)
             states, actions, rewards, next_states = extract_tensors(
                 experiences)
-
+            print("halo _______________________________________________")
             current_q_values = QValues.get_current(policy_net, states, actions)
             next_q_values = QValues.get_next(target_net, next_states)
             target_q_values = (next_q_values * gamma) + rewards
@@ -81,4 +87,4 @@ for episode in range(num_episodes):
 
     if get_moving_average(100, episode_durations)[-1] >= 195:
         break
-env.close()
+

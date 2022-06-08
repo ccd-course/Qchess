@@ -52,8 +52,9 @@ for episode in range(num_episodes):
         new_state, reward, done, info = env.last()
         # Update Q-table
         # Update Q-table for Q(s,a)
+        print(new_state["observation"].flatten())
         q_table[state, action] = q_table[state, action] * (1 - learning_rate) + learning_rate * (
-                reward + discount_rate * np.max(q_table[new_state["observation"], :]))
+                reward + discount_rate * np.max(q_table[new_state["observation"].flatten(), :]))
         # Set new state
         state = new_state
         # Add new reward

@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import random
 
@@ -9,14 +10,14 @@ class Agent():
         self.num_actions = num_actions
         self.device = device
 
-    def select_action(self, state, policy_net):
+    def select_action(self, state, policy_net, mask):
         rate = self.strategy.get_exploration_rate(self.current_step)
         self.current_step += 1
-
         if rate > random.random():
-            action = random.randrange(self.num_actions)
+            # action = random.randrange(self.num_actions)
+            action = np.random.choice(np.argwhere(mask == 1).reshape(-1))
             return torch.tensor([action]).to(self.device)  # explore
         else:
             with torch.no_grad():
                 # exploit
-                return policy_net(state).unsqueeze(dim=0).argmax(dim=1).to(self.device)
+                return (policy_net(state).unsqueeze(dim=0) * mask).argmax(dim=1).to(self.device)

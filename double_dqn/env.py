@@ -1,32 +1,54 @@
-import gym
+import math
 import torch
-
+import qchess_env
+import numpy as np
 
 class EnvManager():
-    def __init__(self, device, env_name):
+    def __init__(self, device):
         self.device = device
-        self.env = gym.make(env_name).unwrapped
+        self.env = qchess_env.env()
         self.env.reset()
         self.done = False
         self.current_state = None
+        self.current_mask = None
+
+    def format_state(self, input):
+        flattened = input.flatten()
+        return flattened
 
     def reset(self):
-        self.current_state = self.env.reset()
+        self.env.reset()
+        cs, _, _, _ = self.env.last()
+        self.current_state = self.format_state(cs["observation"])
+        self.current_mask = self.format_state(cs["action_mask"])
 
     def take_action(self, action):
-        self.current_state, reward, self.done, _ = self.env.step(action.item())
+        self.env.step(action.item())
+        cs, reward, _, _ = self.env.last()
+        self.current_state = self.format_state(cs["observation"])
+        self.current_mask = self.format_state(cs["action_mask"])
         return torch.tensor([reward], device=self.device)
 
     def num_state_features(self):
-        return self.env.observation_space.shape[0]
+        state_size = math.prod(self.env.observation_spaces["player_0"].spaces["observation"].shape)
+        return state_size
 
     def get_state(self):
         if self.done:
-            return torch.zeros_like(
-                torch.tensor(self.current_state), device=self.device
-            ).float()
+            return np.zeros_like(
+                self.current_state
+            )
         else:
-            return torch.tensor(self.current_state, device=self.device).float()
+            return np.array(self.current_state)
+
+    def get_mask(self):
+        if self.done:
+            return np.zeros_like(
+               self.current_mask
+            )
+        else:
+            return np.array(self.current_mask)
+
 
     def num_actions_available(self):
-        return self.env.action_space.n
+        return self.env.action_spaces["player_0"].n

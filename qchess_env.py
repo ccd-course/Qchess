@@ -245,6 +245,7 @@ class raw_env(AECEnv):
         self.rewards[self.agent_selection] += piece_counter[self.agent_selection]
         
         if self.step_count > MAX_STEPS:
+
             pass
         # TODO: Check if game has ended (checkmate or step-count limit exceeded)
         game_over = False

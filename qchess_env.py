@@ -8,9 +8,9 @@ from pettingzoo import AECEnv
 from pettingzoo.utils import agent_selector
 from pettingzoo.utils import wrappers
 
-from game import count_remaining_pieces, get_str_observation, Game
+from game import get_str_observation, Game
 
-PLAYERS = 3
+PLAYERS = 4
 MAX_STEPS = 50
 
 
@@ -109,7 +109,7 @@ class raw_env(AECEnv):
             name: spaces.Dict(
                 {
                     "observation": spaces.Box(
-                        low=0, high=1, shape=(5, 10 * PLAYERS, PLAYERS * 8,), dtype=int
+                        low=0, high=1, shape=(5, 10 * PLAYERS, PLAYERS * 8 + 1,), dtype=int
                     ),
                     "action_mask": spaces.Box(
                         low=0, high=1, shape=(self.action_space_size,), dtype=np.int8
@@ -241,10 +241,8 @@ class raw_env(AECEnv):
         self.rewards[self.agent_selection] -= 1
         
         # add reward for each own piece still alive
-        piece_counter = count_remaining_pieces(self.game.get_observation())
-        #self.rewards[self.agent_selection] += piece_counter[str(self.agent_selection)]
-        # * Valentin said that agent_selection probably is a name like "agent_0" or "agent_1". The following line should work for that and even if it's just "0" or "1" as it will take the last char of the string
-        self.rewards[self.agent_selection] += piece_counter[self.agent_selection[-1]]
+        piece_counter = self.game.count_remaining_pieces(self.game.get_observation())
+        self.rewards[self.agent_selection] += piece_counter[self.agent_selection]
         
         if self.step_count > MAX_STEPS:
             pass

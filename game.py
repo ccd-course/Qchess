@@ -18,7 +18,7 @@ def symbol_layer_mapper(piece_symbol: str, player_id: int) -> int:
     elif(piece_symbol == "F"): layer_base_position = 7
     elif(piece_symbol == "W"): layer_base_position = 8
     # else: raise ValueError(f"Piece symbol is not defined {piece_symbol}")
-    return layer_base_position + player_id * 8
+    return (layer_base_position + player_id * 9) + 1
 
 
 def get_str_observation(observation):
@@ -27,24 +27,6 @@ def get_str_observation(observation):
     :return:
     """
     return str(np.argmax(observation, axis=-1))
-
-
-def count_remaining_pieces(observation):
-    """Count each player's pieces remaining in a given observation.
-
-    :return: dictionary containing player numbers as keys and number of that player's remaining pieces as corresponding value.
-    """
-    # Decode one-hot encoding = find index of 1 on last dimension
-    pieces = np.argmax(observation, axis=-1)
-    # Ignore all zeros = empty squares
-    # Floor divide by 8 to get list of corresponding player for each piece
-    pieces = pieces[pieces != 0] // 8
-
-    # Count occurences of player number, then save to dictionary with key = player number (int) and value = number of pieces remaining
-    # ! Note that players might be missing in the dictionary if they don't have remaining pieces in the game
-    piece_count = dict(zip(*np.unique(pieces, return_counts=True)))
-
-    return piece_count
 
 
 class Game:
@@ -80,6 +62,8 @@ class Game:
                     piece_symbol = str(piece.getType().getSymbol())
                     piece_layer = symbol_layer_mapper(piece_symbol, piece.getPlayer().getId())
                     observation[x_pos][y_pos][piece_layer] = 1
+                else:
+                    observation[x_pos][y_pos][0] = 1
 
         return observation
 
@@ -107,3 +91,28 @@ class Game:
         return self.chess_game_service.executedMove(executed_move_obj.getGameID(),
                                              executed_move_obj.getPreviousPiecePosition(),
                                              executed_move_obj.getNewPiecePosition())
+
+    def count_remaining_pieces(self, observation):
+        """Count each player's pieces remaining in a given observation.
+
+        :return: dictionary containing player numbers as keys and number of that player's remaining pieces as corresponding value.
+        """
+        piece_count = {f"player_{i}": 0 for i in range(len(self.chess_game.getPlayers()))}
+
+        # Decode one-hot encoding = find index of 1 on last dimension
+        pieces = np.argmax(observation, axis=-1)
+        # Ignore all zeros = empty squares
+        pieces_wo_zeros = pieces[pieces != 0]
+        # Minus 1 for empty space coding (see observation)
+        pieces_1 = pieces_wo_zeros - 1
+        # Floor divide by 9 to get list of corresponding player for each piece
+        pieces_pp = pieces_1 // 9
+
+        # Count occurences of player number, then save to dictionary with key = player number (int) and value = number of pieces remaining
+        # ! Note that players might be missing in the dictionary if they don't have remaining pieces in the game
+        # piece_count = dict(zip(*np.unique(pieces_pp, return_counts=True)))
+
+        for pp in pieces_pp:
+            piece_count[f"player_{pp}"] += 1
+
+        return piece_count

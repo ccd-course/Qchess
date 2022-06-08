@@ -2,7 +2,7 @@ import torch
 import torch.optim as optim
 import torch.nn.functional as F
 from itertools import count
-from environment import qchess_env
+from . import qchess_env
 from epsilon_greedy_strategy import EpsilonGreedyStrategy
 from agent import Agent
 from experience_replay import ReplayMemory, Experience, extract_tensors

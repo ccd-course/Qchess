@@ -1,5 +1,5 @@
 import numpy as np
-from environment import qchess_env
+from . import qchess_env
 
 # TODO: enable multi agent training
 

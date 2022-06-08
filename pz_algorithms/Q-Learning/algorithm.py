@@ -2,7 +2,7 @@ import numpy as np
 import pettingzoo
 import random
 import time
-from environment import qchess_env
+from . import qchess_env
 
 # TODO: enable multi agent training
 

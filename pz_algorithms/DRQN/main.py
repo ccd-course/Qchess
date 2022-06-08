@@ -1,5 +1,5 @@
 import numpy as np
-from environment import qchess_env
+from ..DRQN import qchess_env
 import torch
 import torch.nn.functional as F
 import time

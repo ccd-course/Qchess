@@ -168,7 +168,7 @@ class raw_env(AECEnv):
         player = list(filter(lambda player: agent_id == player.getId(), self.game.chess_game.getPlayers()))[0]
         # observation = np.dstack((observation[:, :], self.board_history))
         legal_moves = (
-            self.game.get_legal_moves(player) if player == self.agent_selection else []
+            self.game.get_legal_moves(player) if f"player_{player.getId()}" == self.agent_selection else []
         )
 
         # action_mask example:

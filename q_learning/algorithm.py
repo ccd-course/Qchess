@@ -1,15 +1,21 @@
+import math
+
 import numpy as np
 import pettingzoo
 import random
 import time
-from . import qchess_env
+import qchess_env
 
 # TODO: enable multi agent training
 
 env = qchess_env.env()
 
-action_space_size = env.action_space_size
-state_space_size = env.state_space_size
+# ! math.prod needs python >= 3.8
+action_space_size = math.prod(env.observation_spaces["player_0"].spaces["observation"].shape)
+state_space_size = env.action_spaces["player_0"].n
+
+# action_space_size = env.action_space_size
+# state_space_size = env.state_space_size
 
 q_table = np.zeros((state_space_size, action_space_size))
 
@@ -39,10 +45,14 @@ for episode in range(num_episodes):
         else:
             #action = env.action_space.sample()
             # TODO: test
-            action = env.observation_spaces["player_0"]["action_mask"].sample()
+            try:
+                action = np.random.choice(np.argwhere(env.observe(env.agent_selection)["action_mask"] == 1).reshape(-1))
+            except:
+                raise Exception("Can not perform any action.")
         # Take new action
         # TODO: make sure step function returns required values in given order
-        new_state, reward, done, info = env.step(action)
+        env.step(action)
+        new_state, reward, done, info = env.last()
         # Update Q-table
         # Update Q-table for Q(s,a)
         q_table[state, action] = q_table[state, action] * (1 - learning_rate) + learning_rate * (

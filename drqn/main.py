@@ -17,8 +17,9 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 #env = EnvManager(device, 'CartPole-v1')
 env = qchess_env.env()
 
-state_size = env.state_space_size
-n_actions = env.action_space_size
+# ! math.prod needs python >= 3.8
+state_size = math.prod(env.observation_spaces["player_0"].spaces["observation"].shape)
+n_actions = env.action_spaces["player_0"].n
 
 embedding_size = 8
 M_episodes = 2500
@@ -52,7 +53,7 @@ for episode in range(M_episodes):
     last_action = 0
     current_return = 0
     env.reset()
-    last_observation = env.observe()
+    last_observation = env.observe(env.agent_selection)
     for timestep in count():
         action, hidden = agent.act(torch.tensor(last_observation).float().view(1, 1, -1).cuda(), F.one_hot(
             torch.tensor(last_action), n_actions).view(1, 1, -1).float().cuda(), eps, adrqn, hidden=hidden)

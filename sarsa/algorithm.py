@@ -1,5 +1,8 @@
 import numpy as np
-from . import qchess_env
+
+import os, sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import qchess_env
 
 # TODO: enable multi agent training
 

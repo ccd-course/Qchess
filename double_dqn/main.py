@@ -27,7 +27,7 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 em = EnvManager(device)
 strategy = EpsilonGreedyStrategy(eps_start, eps_end, eps_decay)
 
-# ! math.prod needs python >= 3.8
+# ! math.prod requires python >= 3.8
 state_size = em.num_state_features()
 n_actions = em.num_actions_available()
 
